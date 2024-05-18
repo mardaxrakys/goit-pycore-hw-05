@@ -1,92 +1,107 @@
-#----------------------------------------------------------
-#-----------Декоратор input_error
+# помічник CLI бот
+
+# обробка вводу користувача
+def parse_input(user_input):
+    #------------------------------------------------------------------------------
+    # розбір вхідних даних користувача на команду і аргументи
+    parts = user_input.strip().split(maxsplit=2)  # видалення зайвих пробілів і розділення на частини
+    command = parts[0].lower()  # нормалізація в нижній регістр
+    args = parts[1:] if len(parts) > 1 else []  # отримання аргументу команди
+    return command, args
+    #----------------------------------------------------------------------------------
+
 def input_error(func):
+    #------------------------------------------------------------------------------
+    # декоратор для обробки помилок введення користувача
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except KeyError:
-            return "Enter user name"
+            return "Error: Contact not found."
         except ValueError:
-            return "Give me name and phone please"
+            return "Error: Give me name and phone please."
         except IndexError:
-            return "Invalid command format"
+            return "Error: Please enter valid arguments."
     return inner
-
-#----------------------------------------------------------
-#-------------Функції-обробники команд
-contacts = {}
+    #----------------------------------------------------------------------------------
 
 @input_error
-def add_contact(args):
-    name, phone = args.split()
+def add_contact(args, contacts):
+    #------------------------------------------------------------------------------
+    # додавання контакту
+    if len(args) != 2:
+        raise ValueError
+    name, phone = args
     contacts[name] = phone
     return "Contact added."
+    #----------------------------------------------------------------------------------
 
 @input_error
-def change_contact(args):
-    name, phone = args.split()
+def change_contact(args, contacts):
+    #------------------------------------------------------------------------------
+    # зміна телефону існуючого контакту
+    if len(args) != 2:
+        raise ValueError
+    name, phone = args
     if name in contacts:
         contacts[name] = phone
         return "Contact updated."
     else:
         raise KeyError
+    #----------------------------------------------------------------------------------
 
 @input_error
-def get_phone(args):
-    name = args.strip()
-    return contacts[name]
+def show_phone(args, contacts):
+    #------------------------------------------------------------------------------
+    # вивід телефону зазначеного контакту
+    if len(args) != 1:
+        raise ValueError
+    name = args[0]
+    if name in contacts:
+        return f"{name}'s phone number is {contacts[name]}"
+    else:
+        raise KeyError
+    #----------------------------------------------------------------------------------
 
 @input_error
-def show_all(args):
-    return "\n".join([f"{name}: {phone}" for name, phone in contacts.items()])
+def show_all(contacts):
+    #------------------------------------------------------------------------------
+    # вивід усіх контактів
+    if contacts:
+        return "\n".join(f"{name}: {phone}" for name, phone in contacts.items())
+    else:
+        return "No contacts stored."
+    #----------------------------------------------------------------------------------
 
-@input_error
-def unknown_command(args):
-    return "Unknown command"
-
-
-#----------------------------------------------------------
-#-------------------Основний цикл програми
 def main():
-    commands = {
-        "add": add_contact,
-        "change": change_contact,
-        "phone": get_phone,
-        "all": show_all,
-    }
-
+    #------------------------------------------------------------------------------
+    # головна main функція для управління операціями бота
+    contacts = {}
+    print("Welcome to the CLI Assistant Bot!")
     while True:
-        command_input = input("Enter a command: ").strip()
-        if command_input == "exit":
-            print("Goodbye!")
-            break
-        
-        command_name, *command_args = command_input.split(" ", 1)
-        command_args = command_args[0] if command_args else ""
+        user_input = input("Enter a command: ")
+        command, args = parse_input(user_input)
 
-        command = commands.get(command_name, unknown_command)
-        result = command(command_args)
-        print(result)
+        if command in ["close", "exit"]:
+            print("Good bye!")
+            break
+        elif command == "hello":
+            print("How can I help you?")
+        elif command == "add":
+            print(add_contact(args, contacts))
+        elif command == "change":
+            print(change_contact(args, contacts))
+        elif command == "phone":
+            print(show_phone(args, contacts))
+        elif command == "all":
+            print(show_all(contacts))
+        else:
+            print("Invalid command.")
+    #----------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     main()
 
-
-#----------------------------------------------------------
-#--------ПРИКЛАД_ВИКОРИСТАННЯ------
-"""
-Enter a command: add
-Give me name and phone please
-Enter a command: add Bob
-Give me name and phone please
-Enter a command: add Jime 0501234356
-Contact added.
-Enter a command: phone
-Enter user name
-Enter a command: phone Jime
-0501234356
-Enter a command: all
-Jime: 0501234356
-Enter a command: exit
-Goodbye!
-"""
+# використання боту з командного рядку: python [path]/homework-04.py [commands]
+# наприклад: python homework-04.py add Василь 1234567890
+# доступні команди: hello, add, change, phone, all
